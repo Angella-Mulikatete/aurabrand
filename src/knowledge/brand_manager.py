@@ -33,8 +33,15 @@ class BrandManager:
 
     def clear_brand_data(self):
         """Resets the collection for a fresh start."""
-        self.client.delete_collection("brand_guidelines")
+        try:
+            self.client.delete_collection("brand_guidelines")
+        except:
+            pass
         self.collection = self.client.get_or_create_collection("brand_guidelines")
+
+    def get_count(self) -> int:
+        """Returns the number of guidelines in the store."""
+        return self.collection.count()
 
 if __name__ == "__main__":
     # Quick test

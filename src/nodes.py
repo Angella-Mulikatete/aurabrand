@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage
 from src.state import AgentState, Feedback
 from src.skills.research import research_skill
 from src.factory import get_model, get_model_with_fallback
+from src.knowledge.brand_manager import BrandManager, BrandGuideline
 
 load_dotenv()
 
@@ -15,6 +16,11 @@ def creates_node(state: AgentState) -> AgentState:
     # Initialize the model dynamically (with automatic fallback)
     model = get_model_with_fallback()
     
+    # Retrieve relevant brand guidelines from memory
+    bm = BrandManager()
+    memory_guidelines = bm.get_guidelines(state["user_request"])
+    memory_context = "\n".join([f"- {g}" for g in memory_guidelines])
+    
     # Gather context
     brand_identity = state["brand_context"].guidelines
     last_feedback = ""
@@ -24,8 +30,11 @@ def creates_node(state: AgentState) -> AgentState:
     prompt = f"""
     You are the 'AuraBrand Wordsmith'. Your goal is to create high-quality content that feels native to the brand.
     
-    BRAND GUIDELINES:
+    CORE BRAND GUIDELINES:
     {brand_identity}
+    
+    PAST LEARNED LESSONS & RELEVANT MEMORY:
+    {memory_context if memory_context else "No specific past lessons found for this topic yet."}
     
     USER REQUEST:
     {state['user_request']}
@@ -96,10 +105,36 @@ def updates_skill_node(state: AgentState) -> AgentState:
     """The agent UPDATES ITS SKILL by researching and learning from context."""
     print("--- [Node: Updates Skill] ---")
     
-    # The Evaluator might decide we need more research
+    model = get_model_with_fallback()
+    bm = BrandManager()
+    
+    # 1. Research for more facts
     query = state["user_request"]
     new_facts = research_skill(query, depth=state["iteration_count"])
     
+    # 2. Extract a 'Brand Lesson' if we have feedback
+    new_memory_id = None
+    if state["feedback_history"]:
+        last_feedback = state["feedback_history"][-1]
+        if last_feedback.score < 0.8:  # Only learn if there was significant room for improvement
+            learn_prompt = f"""
+            Based on this feedback: '{last_feedback.suggestions}', 
+            extract a single, concise brand guideline that should be followed in future.
+            Example: 'Always avoid using the word synergy when describing AI features.'
+            Output only the guideline text.
+            """
+            lesson = model.invoke([HumanMessage(content=learn_prompt)]).content
+            
+            # Store the lesson in BrandManager
+            import uuid
+            lesson_id = f"lesson_{uuid.uuid4().hex[:8]}"
+            bm.add_guideline(BrandGuideline(
+                id=lesson_id,
+                content=lesson,
+                category="learned_lesson"
+            ))
+            print(f"Learned a new skill: {lesson}")
+
     return {
         **state,
         "research_notes": state["research_notes"] + new_facts

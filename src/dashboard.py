@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from src.state import AgentState, BrandContext
 from src.graph import create_brand_graph
+from src.knowledge.brand_manager import BrandManager
 
 load_dotenv()
 
@@ -50,6 +51,16 @@ with st.sidebar:
                                    "Premium, innovative, and human-centric. Avoid jargon.")
     forbidden = st.text_input("Forbidden Terms (comma separated)", "synergy, paradigm shift")
     
+    st.divider()
+    st.header(" Brain & Memory")
+    bm = BrandManager()
+    count = bm.get_count()
+    st.metric("Learned Brand Insights", count)
+    
+    if st.button("Clear Learned Skills"):
+        bm.clear_brand_data()
+        st.rerun()
+
     st.divider()
     st.header(" Model Settings")
     provider = st.selectbox("LLM Provider", ["google", "openai", "anthropic", "groq"])
