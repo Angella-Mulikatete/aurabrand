@@ -1,4 +1,5 @@
 import pytest
+import os
 from unittest.mock import patch, MagicMock
 from src.graph import create_brand_graph
 from src.state import AgentState, BrandContext, Feedback
@@ -47,25 +48,26 @@ def test_learning_persistence(mock_research, mock_get_model, mock_brand_context)
         "final_document": None
     }
     
-    # Execute first run with patched BrandManager
-    with patch("src.nodes.BrandManager", return_value=bm):
-        app.invoke(initial_state)
-    
-    # 2. Verify something was learned
-    assert bm.get_count() > 0
-    learned = bm.get_guidelines("Write about AI.")
-    assert "Never use jargon" in learned[0]
+    # We need to ensure BrandManager is using Chroma for this test to avoid needing a real Convex URL
+    with patch.dict(os.environ, {"VECTOR_DB_PROVIDER": "chroma"}):
+        # Execute first run with patched BrandManager
+        with patch("src.nodes.BrandManager", return_value=bm):
+            app.invoke(initial_state)
+        
+        # 2. Verify something was learned
+        assert bm.get_count() > 0
+        learned = bm.get_guidelines("Write about AI.")
+        assert "Never use jargon" in learned[0]
 
-    # 3. Second Run: Check if it's retrieved in Creates
-    # Reset mocks for second run
-    mock_model.invoke.side_effect = [
-        MagicMock(content="Better Draft"), # Creates node (should have context now)
-        MagicMock(content='{"is_compliant": true, "suggestions": [], "score": 1.0}') # Feedback node
-    ]
+        # 3. Second Run: Check if it's retrieved in Creates
+        # Reset mocks for second run
+        mock_model.invoke.side_effect = [
+            MagicMock(content="Better Draft"), # Creates node (should have context now)
+            MagicMock(content='{"is_compliant": true, "suggestions": [], "score": 1.0}') # Feedback node
+        ]
     
-    # We need to ensure BrandManager is patched or points to the same test DB
-    with patch("src.nodes.BrandManager", return_value=bm):
-        app.invoke(initial_state)
+        with patch("src.nodes.BrandManager", return_value=bm):
+            app.invoke(initial_state)
         
     # No explicit assertion on prompt content here easily, 
     # but the fact that it didn't crash and we verified storage is key.

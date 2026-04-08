@@ -6,3 +6,5 @@ venv/
 aurabrand.egg-info/
 build/
 dist/
+
+.env.local

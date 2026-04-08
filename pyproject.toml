@@ -17,6 +17,7 @@ dependencies = [
     "tavily-python",
     "streamlit",
     "plotly",
+    "convex",
 ]
 
 [tool.setuptools]

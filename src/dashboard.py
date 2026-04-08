@@ -54,11 +54,15 @@ with st.sidebar:
     st.divider()
     st.header(" Brain & Memory")
     bm = BrandManager()
+    provider = os.getenv("VECTOR_DB_PROVIDER", "chroma")
+    st.info(f"Active Provider: **{provider.upper()}**")
+    
     count = bm.get_count()
     st.metric("Learned Brand Insights", count)
     
-    if st.button("Clear Learned Skills"):
+    if st.button("Clear Memory"):
         bm.clear_brand_data()
+        st.success("Memory cleared!")
         st.rerun()
 
     st.divider()
