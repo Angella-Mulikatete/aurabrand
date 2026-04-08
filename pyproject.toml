@@ -1,0 +1,23 @@
+[project]
+name = "aurabrand"
+version = "0.1.0"
+description = "Self-improving, brand-aware document creation agentic suite."
+authors = [{ name = "Antigravity", email = "antigravity@example.com" }]
+dependencies = [
+    "langgraph>=0.0.15",
+    "langchain-google-genai",
+    "langchain-anthropic",
+    "langchain-openai",
+    "langchain-groq",
+    "langchain-core",
+    "pydantic>=2.0.0",
+    "python-dotenv",
+    "chromadb",
+    "sentence-transformers",
+    "tavily-python",
+    "streamlit",
+    "plotly",
+]
+
+[tool.setuptools]
+packages = ["src"]
