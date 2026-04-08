@@ -10,7 +10,9 @@ class BrandContext(BaseModel):
 class Feedback(BaseModel):
     is_compliant: bool
     suggestions: List[str]
-    score: float  # 0 to 1
+    score: float  # Overall score 0 to 1
+    # Dimensional breakdown (Tone, Visual, Structure)
+    breakdown: dict = Field(default_factory=lambda: {"tone": 0.0, "visual": 0.0, "structure": 0.0})
 
 class AgentState(TypedDict):
     # Input
@@ -28,3 +30,4 @@ class AgentState(TypedDict):
     
     # Final Output
     final_document: Union[str, None]
+    output_files: List[str] # Paths to generated .docx, .pdf, etc.

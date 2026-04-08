@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from src.state import AgentState, Feedback
 from src.skills.research import research_skill
+from src.skills.doc_gen import generate_docx
+from src.skills.pdf_gen import generate_pdf
+from src.skills.pptx_gen import generate_pptx
 from src.factory import get_model, get_model_with_fallback
 from src.knowledge.brand_manager import BrandManager, BrandGuideline
 
@@ -54,11 +57,29 @@ def creates_node(state: AgentState) -> AgentState:
     response = model.invoke([HumanMessage(content=prompt)])
     
     # Update state
-    return {
+    updated_state = {
         **state,
         "current_draft": response.content,
         "iteration_count": state["iteration_count"] + 1
     }
+
+    # Final Step: If we are at the end, generate all formats
+    if updated_state["iteration_count"] >= state["max_iterations"]:
+        # 📂 Create Asset Pack paths
+        base_path = f"outputs/brand_run_{state['iteration_count']}"
+        docx_path = f"{base_path}.docx"
+        pdf_path = f"{base_path}.pdf"
+        pptx_path = f"{base_path}.pptx"
+        
+        # 🪄 Generate Files
+        docx_url = generate_docx(response.content, state["brand_context"], docx_path)
+        pdf_url = generate_pdf(response.content, state["brand_context"], pdf_path)
+        pptx_url = generate_pptx(response.content, state["brand_context"], pptx_path)
+        
+        updated_state["output_files"] = [docx_url, pdf_url, pptx_url]
+        updated_state["final_document"] = response.content
+
+    return updated_state
 
 def feedback_node(state: AgentState) -> AgentState:
     """The Brand Guardian provides FEEDBACK on the draft."""
@@ -83,7 +104,12 @@ def feedback_node(state: AgentState) -> AgentState:
     Format your response as a JSON object with:
     'is_compliant': bool,
     'suggestions': [list of strings],
-    'score': float (0-1)
+    'score': float (0-1),
+    'breakdown': {{
+        'tone': float (0-1),
+        'visual': float (0-1),
+        'structure': float (0-1)
+    }}
     """
     
     response = model.invoke([HumanMessage(content=prompt)])

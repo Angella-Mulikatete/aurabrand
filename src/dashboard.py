@@ -2,6 +2,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
+import warnings
+import logging
+
+# 🤫 Silence the noise
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+logging.getLogger("transformers").setLevel(logging.ERROR)
+
 from dotenv import load_dotenv
 from src.state import AgentState, BrandContext
 from src.graph import create_brand_graph
@@ -102,7 +110,8 @@ with col1:
             "feedback_history": [],
             "iteration_count": 0,
             "max_iterations": max_iters,
-            "final_document": None
+            "final_document": None,
+            "output_files": []
         }
         
         # Override Provider in ENV for this run
@@ -124,7 +133,7 @@ with col1:
 if st.session_state.events:
     last_state = st.session_state.events[-1]["state"]
     
-    tab1, tab2, tab3 = st.tabs([" Final Document", " Improvement Metrics", " Research Context"])
+    tab1, tab2, tab3, tab4 = st.tabs([" Final Document", " Improvement Metrics", " Research Context", "  Generated Files"])
     
     with tab1:
         st.markdown(f"### Result ({provider.upper()})")
@@ -141,8 +150,23 @@ if st.session_state.events:
             fig.update_layout(yaxis_range=[0, 1])
             st.plotly_chart(fig, use_container_width=True)
             
-            st.write("#### Latest Feedback")
-            st.json(feedback_list[-1].model_dump())
+            # Dimensional Breakdown
+            st.write("#### Latest Dimensional Audit")
+            latest_feedback = feedback_list[-1]
+            breakdown = latest_feedback.breakdown
+            
+            b_df = pd.DataFrame({
+                "Dimension": ["Tone", "Visual", "Structure"],
+                "Score": [breakdown.get("tone", 0), breakdown.get("visual", 0), breakdown.get("structure", 0)]
+            })
+            
+            fig_b = px.bar(b_df, x="Dimension", y="Score", color="Dimension", 
+                           title="Latest Compliance Breakdown", text_auto=True)
+            fig_b.update_layout(yaxis_range=[0, 1])
+            st.plotly_chart(fig_b, use_container_width=True)
+            
+            st.write("#### Latest Detailed Feedback")
+            st.json(latest_feedback.model_dump())
         else:
             st.write("Waiting for first review...")
 
@@ -150,6 +174,32 @@ if st.session_state.events:
         st.subheader("External Knowledge Gathered")
         for note in last_state.get("research_notes", []):
             st.write(f"- {note}")
+
+    with tab4:
+        st.subheader(" Download Your Brand Assets")
+        files = last_state.get("output_files", [])
+        if files:
+            # Map extensions to MIME types
+            mime_map = {
+                ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".pdf": "application/pdf",
+                ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            }
+            
+            for f_path in files:
+                file_name = os.path.basename(f_path)
+                ext = os.path.splitext(file_name)[1].lower()
+                mime = mime_map.get(ext, "application/octet-stream")
+                
+                with open(f_path, "rb") as f:
+                    st.download_button(
+                        label=f"Download {file_name}",
+                        data=f,
+                        file_name=file_name,
+                        mime=mime
+                    )
+        else:
+            st.warning("No files generated. Complete a full iteration to see assets.")
 
 with col2:
     st.markdown("""

@@ -29,7 +29,8 @@ def main():
         "feedback_history": [],
         "iteration_count": 0,
         "max_iterations": 3,
-        "final_document": None
+        "final_document": None,
+        "output_files": []
     }
     
     # 3. Run the agentic loop

@@ -6,9 +6,28 @@ export default defineSchema({
     content: v.string(),
     category: v.string(),
     embedding: v.array(v.float64()),
-    id: v.string(), // Local ID/Reference
+    id: v.string(), 
   }).vectorIndex("by_embedding", {
     vectorField: "embedding",
     dimensions: 384,
+  }),
+
+  // Visual Identity Storage
+  brand_visuals: defineTable({
+    primary_color: v.string(), // HEX
+    secondary_color: v.optional(v.string()),
+    font_family: v.string(),
+    logo_url: v.optional(v.string()),
+    last_updated: v.number(),
+  }),
+
+  // Tracking improvement over time for judges
+  learning_history: defineTable({
+    timestamp: v.number(),
+    topic: v.string(),
+    previous_score: v.float64(),
+    new_score: v.float64(),
+    improvement_delta: v.float64(),
+    lesson_learned: v.string(),
   }),
 });
