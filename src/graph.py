@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, END
 from src.state import AgentState
-from src.nodes import drafting_node, review_node, improvement_node
+from src.nodes import creates_node, updates_skill_node, feedback_node
 
 def should_continue(state: AgentState) -> str:
     """Decision logic to continue or stop the iteration."""
@@ -11,34 +11,36 @@ def should_continue(state: AgentState) -> str:
     if state["feedback_history"] and state["feedback_history"][-1].is_compliant:
         return "end"
     
-    return "improve"
+    return "creates"
 
 def create_brand_graph():
     # Initialize the graph with our state schema
     workflow = StateGraph(AgentState)
 
     # Add nodes
-    workflow.add_node("drafting", drafting_node)
-    workflow.add_node("review", review_node)
-    workflow.add_node("improvement", improvement_node)
+    workflow.add_node("creates", creates_node)
+    workflow.add_node("updates_skill", updates_skill_node)
+    workflow.add_node("feedback", feedback_node)
 
     # Define the flow
-    workflow.set_entry_point("drafting")
+    workflow.set_entry_point("creates")
     
-    workflow.add_edge("drafting", "review")
+    # 1. First, create the draft
+    workflow.add_edge("creates", "updates_skill")
     
-    # Conditional edge from review
+    # 2. Second, update skills/research based on the creation
+    workflow.add_edge("updates_skill", "feedback")
+    
+    # 3. Third, give feedback and decide if reviewed/complete
     workflow.add_conditional_edges(
-        "review",
+        "feedback",
         should_continue,
         {
-            "improve": "improvement",
+            "creates": "creates",
             "end": END
         }
     )
     
-    workflow.add_edge("improvement", "drafting")
-
     return workflow.compile()
 
 # Example usage

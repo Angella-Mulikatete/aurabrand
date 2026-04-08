@@ -8,9 +8,9 @@ from src.factory import get_model, get_model_with_fallback
 
 load_dotenv()
 
-def drafting_node(state: AgentState) -> AgentState:
-    """The Strategist and Wordsmith collaborate to create or update the draft."""
-    print("--- [Node: Drafting] ---")
+def creates_node(state: AgentState) -> AgentState:
+    """The agent CREATES the initial or updated draft."""
+    print("--- [Node: Creates] ---")
     
     # Initialize the model dynamically (with automatic fallback)
     model = get_model_with_fallback()
@@ -51,9 +51,9 @@ def drafting_node(state: AgentState) -> AgentState:
         "iteration_count": state["iteration_count"] + 1
     }
 
-def review_node(state: AgentState) -> AgentState:
-    """The Brand Guardian reviews the draft against brand guidelines."""
-    print("--- [Node: Review] ---")
+def feedback_node(state: AgentState) -> AgentState:
+    """The Brand Guardian provides FEEDBACK on the draft."""
+    print("--- [Node: Feedback] ---")
     
     model = get_model_with_fallback()
     draft = state["current_draft"]
@@ -92,9 +92,9 @@ def review_node(state: AgentState) -> AgentState:
         "feedback_history": state["feedback_history"] + [feedback]
     }
 
-def improvement_node(state: AgentState) -> AgentState:
-    """The Evaluator synthesizes feedback and research to guide the next iteration."""
-    print("--- [Node: Improvement] ---")
+def updates_skill_node(state: AgentState) -> AgentState:
+    """The agent UPDATES ITS SKILL by researching and learning from context."""
+    print("--- [Node: Updates Skill] ---")
     
     # The Evaluator might decide we need more research
     query = state["user_request"]
