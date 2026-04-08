@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from src.state import AgentState, BrandContext
 from src.graph import create_brand_graph
 
-load_dotenv()
+load_dotenv(override=True)
 
 def main():
     # 1. Initialize the system

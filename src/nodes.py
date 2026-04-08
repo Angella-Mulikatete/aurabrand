@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from src.state import AgentState, Feedback
 from src.skills.research import research_skill
-from src.factory import get_model
+from src.factory import get_model, get_model_with_fallback
 
 load_dotenv()
 
@@ -12,8 +12,8 @@ def drafting_node(state: AgentState) -> AgentState:
     """The Strategist and Wordsmith collaborate to create or update the draft."""
     print("--- [Node: Drafting] ---")
     
-    # Initialize the model dynamically
-    model = get_model()
+    # Initialize the model dynamically (with automatic fallback)
+    model = get_model_with_fallback()
     
     # Gather context
     brand_identity = state["brand_context"].guidelines
@@ -55,7 +55,7 @@ def review_node(state: AgentState) -> AgentState:
     """The Brand Guardian reviews the draft against brand guidelines."""
     print("--- [Node: Review] ---")
     
-    model = get_model()
+    model = get_model_with_fallback()
     draft = state["current_draft"]
     brand_context = state["brand_context"]
     
