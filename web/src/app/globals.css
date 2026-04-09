@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+@plugin 'tailwindcss-animate';
+
+@theme {
+  --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui;
+  --font-mono: var(--font-fira-code), ui-monospace, SFMono-Regular;
+
+  --color-background: hsl(270 100% 98%);
+  --color-foreground: hsl(264 67% 35%);
+  --color-primary: #7C3AED;
+  --color-primary-dark: #4C1D95;
+  --color-primary-light: #A78BFA;
+  --color-accent: #F97316;
+
+  --color-border: hsl(262 40% 85%);
+  --color-input: hsl(262 40% 85%);
+  --color-ring: #7C3AED;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  *, *::before, *::after {
+    border-color: var(--color-border);
+  }
+  
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+:root {
+  --background: 270 100% 98%;
+  --foreground: 264 67% 35%;
+  --card: 270 100% 98%;
+  --card-foreground: 264 67% 35%;
+  --popover: 270 100% 98%;
+  --popover-foreground: 264 67% 35%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 270 100% 98%;
+  --secondary: 260 89% 75%;
+  --secondary-foreground: 264 67% 35%;
+  --muted: 260 89% 92%;
+  --muted-foreground: 264 40% 55%;
+  --accent: 25 95% 53%;
+  --accent-foreground: 270 100% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 270 100% 98%;
+  --border: 262 40% 85%;
+  --input: 262 40% 85%;
+  --ring: 262 83% 58%;
+  --radius: 0.75rem;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 8px 40px rgba(124, 58, 237, 0.08);
+}
+
+.morph-gradient {
+  background: linear-gradient(120deg, #7C3AED, #A78BFA, #F97316, #7C3AED);
+  background-size: 300% 300%;
+  animation: gradientFlow 10s ease infinite;
+}
+
+@keyframes gradientFlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
