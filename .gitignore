@@ -22,3 +22,6 @@ streamlit.log
 convex_dev.log
 
 node_modules/
+api_logs.txt
+scratch/
+py_tmp/
