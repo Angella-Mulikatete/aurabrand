@@ -8,3 +8,15 @@ build/
 dist/
 
 .env.local
+
+# Next.js
+web/.next/
+web/node_modules/
+web/.env.local
+
+# Python API temp
+test_openai.py
+test_pollinations.py
+outputs/
+streamlit.log
+convex_dev.log
