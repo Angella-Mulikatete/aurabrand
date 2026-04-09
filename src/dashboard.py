@@ -1,4 +1,11 @@
 import streamlit as st
+import os
+import sys
+
+# Ensure the project root is in the path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
 import pandas as pd
 import plotly.express as px
 import os
@@ -58,10 +65,31 @@ with st.sidebar:
     brand_guidelines = st.text_area("Style Guidelines", 
                                    "Premium, innovative, and human-centric. Avoid jargon.")
     forbidden = st.text_input("Forbidden Terms (comma separated)", "synergy, paradigm shift")
+
+    st.divider()
+    st.header(" Visual Identity")
     
+    # Load existing visuals
+    bm = BrandManager()
+    existing_visuals = bm.get_visuals()
+    
+    primary_color = st.color_picker("Primary Color", existing_visuals.get("primary_color", "#7d33ff"))
+    secondary_color = st.color_picker("Secondary Color", existing_visuals.get("secondary_color", "#ffffff"))
+    font_selection = st.selectbox("Brand Font", 
+                                ["Arial", "Inter", "Montserrat", "Georgia", "Courier New"],
+                                index=0 if existing_visuals.get("font_family") not in ["Arial", "Inter", "Montserrat", "Georgia", "Courier New"] 
+                                else ["Arial", "Inter", "Montserrat", "Georgia", "Courier New"].index(existing_visuals.get("font_family")))
+    
+    if st.button("Sync Visuals"):
+        bm.update_visuals({
+            "primary_color": primary_color,
+            "secondary_color": secondary_color,
+            "font_family": font_selection
+        })
+        st.success("Brand identity synced!")
+
     st.divider()
     st.header(" Brain & Memory")
-    bm = BrandManager()
     provider = os.getenv("VECTOR_DB_PROVIDER", "chroma")
     st.info(f"Active Provider: **{provider.upper()}**")
     
@@ -99,8 +127,18 @@ with col1:
             name=brand_name,
             guidelines=brand_guidelines,
             tone=brand_tone,
-            forbidden_terms=[t.strip() for t in forbidden.split(",")]
+            forbidden_terms=[t.strip() for t in forbidden.split(",")],
+            primary_color=primary_color,
+            secondary_color=secondary_color,
+            font_family=font_selection
         )
+        
+        # Persist visuals to backend before starting the run
+        bm.update_visuals({
+            "primary_color": primary_color,
+            "secondary_color": secondary_color,
+            "font_family": font_selection
+        })
         
         state: AgentState = {
             "user_request": user_req,
@@ -137,7 +175,9 @@ if st.session_state.events:
     
     with tab1:
         st.markdown(f"### Result ({provider.upper()})")
-        st.info(last_state.get("current_draft", "No draft generated yet."))
+        # Show cleaned final document if available, otherwise raw draft
+        display_text = last_state.get("final_document") or last_state.get("current_draft", "No draft generated yet.")
+        st.info(display_text)
         
     with tab2:
         st.subheader("Performance Over Iterations")

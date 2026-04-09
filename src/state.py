@@ -6,6 +6,12 @@ class BrandContext(BaseModel):
     guidelines: str = ""
     tone: str = "Neutral"
     forbidden_terms: List[str] = Field(default_factory=list)
+    
+    # Visual Identity (V2)
+    primary_color: str = "#7d33ff" # Default purple
+    secondary_color: str = "#ffffff"
+    font_family: str = "Arial"
+    logo_url: Union[str, None] = None
 
 class Feedback(BaseModel):
     is_compliant: bool

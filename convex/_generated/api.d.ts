@@ -10,6 +10,7 @@
 
 import type * as actions from "../actions.js";
 import type * as guidelines from "../guidelines.js";
+import type * as visuals from "../visuals.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +21,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
   guidelines: typeof guidelines;
+  visuals: typeof visuals;
 }>;
 
 /**

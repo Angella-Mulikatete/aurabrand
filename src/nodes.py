@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from src.state import AgentState, Feedback
@@ -7,10 +8,19 @@ from src.skills.research import research_skill
 from src.skills.doc_gen import generate_docx
 from src.skills.pdf_gen import generate_pdf
 from src.skills.pptx_gen import generate_pptx
+from src.skills.image_gen import generate_image
 from src.factory import get_model, get_model_with_fallback
 from src.knowledge.brand_manager import BrandManager, BrandGuideline
 
 load_dotenv()
+
+def detect_intent(request: str) -> str:
+    """Classifies the user request into DOCUMENT or PRESENTATION."""
+    req_lower = request.lower()
+    presentation_keywords = ["presentation", "powerpoint", "slides", "pptx", "deck", "pitch"]
+    if any(k in req_lower for k in presentation_keywords):
+        return "PRESENTATION"
+    return "DOCUMENT"
 
 def creates_node(state: AgentState) -> AgentState:
     """The agent CREATES the initial or updated draft."""
@@ -19,17 +29,25 @@ def creates_node(state: AgentState) -> AgentState:
     # Initialize the model dynamically (with automatic fallback)
     model = get_model_with_fallback()
     
-    # Retrieve relevant brand guidelines from memory
+    # Retrieve relevant brand guidelines and visual tokens from memory
     bm = BrandManager()
     memory_guidelines = bm.get_guidelines(state["user_request"])
     memory_context = "\n".join([f"- {g}" for g in memory_guidelines])
+    
+    # NEW: Fetch visual identity tokens
+    visuals = bm.get_visuals()
+    state["brand_context"].primary_color = visuals.get("primary_color", state["brand_context"].primary_color)
+    state["brand_context"].secondary_color = visuals.get("secondary_color", state["brand_context"].secondary_color)
+    state["brand_context"].font_family = visuals.get("font_family", state["brand_context"].font_family)
     
     # Gather context
     brand_identity = state["brand_context"].guidelines
     last_feedback = ""
     if state["feedback_history"]:
         last_feedback = f"Past Feedback: {state['feedback_history'][-1].suggestions}"
-
+    # Intent Detection
+    intent = detect_intent(state["user_request"])
+    
     prompt = f"""
     You are the 'AuraBrand Wordsmith'. Your goal is to create high-quality content that feels native to the brand.
     
@@ -51,6 +69,10 @@ def creates_node(state: AgentState) -> AgentState:
     {state.get('current_draft', 'None')}
     
     Task: Update/Create the draft. Ensure it is better than the previous version and addresses all feedback.
+    
+    IMPORTANT: You are currently creating a {intent}.
+    { "Format your response as a series of slides. Each slide MUST follow this structure:\nSLIDE_START\nTITLE: [Slide Title]\nCONTENT: [Bullet points or paragraph]\nIMAGE_PROMPT: [Description of a visual asset]\nSLIDE_END" if intent == "PRESENTATION" else "Use standard professional prose with clear headings and markdown formatting. DO NOT use SLIDE_START tags." }
+    
     Output only the refined content.
     """
     
@@ -63,23 +85,53 @@ def creates_node(state: AgentState) -> AgentState:
         "iteration_count": state["iteration_count"] + 1
     }
 
-    # Final Step: If we are at the end, generate all formats
-    if updated_state["iteration_count"] >= state["max_iterations"]:
-        # 📂 Create Asset Pack paths
-        base_path = f"outputs/brand_run_{state['iteration_count']}"
-        docx_path = f"{base_path}.docx"
-        pdf_path = f"{base_path}.pdf"
-        pptx_path = f"{base_path}.pptx"
-        
-        # 🪄 Generate Files
-        docx_url = generate_docx(response.content, state["brand_context"], docx_path)
-        pdf_url = generate_pdf(response.content, state["brand_context"], pdf_path)
-        pptx_url = generate_pptx(response.content, state["brand_context"], pptx_path)
-        
-        updated_state["output_files"] = [docx_url, pdf_url, pptx_url]
-        updated_state["final_document"] = response.content
-
     return updated_state
+
+def finalize_node(state: AgentState) -> AgentState:
+    """The agent FINALIZES the document and generates assets."""
+    print("--- [Node: Finalize] ---")
+    
+    intent = detect_intent(state["user_request"])
+    draft = state["current_draft"]
+    
+    # 📂 Create Asset Pack paths
+    base_path = f"outputs/brand_run_{state['iteration_count']}"
+    docx_path = f"{base_path}.docx"
+    pdf_path = f"{base_path}.pdf"
+    pptx_path = f"{base_path}.pptx"
+    
+    # 🪄 Generate Files based on Intent
+    output_files = []
+    if intent == "PRESENTATION":
+        image_assets = {}
+        # Parse image prompts and generate assets
+        prompts = re.findall(r"IMAGE_PROMPT:\s*(.*)", draft, re.IGNORECASE)
+        for idx, prompt_text in enumerate(prompts):
+            p_text = prompt_text.strip()
+            if p_text:
+                img_path = f"outputs/assets/run_{state['iteration_count']}/slide_{idx+1}.png"
+                actual_path = generate_image(p_text, state["brand_context"], img_path)
+                if actual_path:
+                    image_assets[p_text] = actual_path
+                    
+        pptx_url = generate_pptx(draft, state["brand_context"], pptx_path, image_assets)
+        output_files = [pptx_url]
+    else:
+        docx_url = generate_docx(draft, state["brand_context"], docx_path)
+        pdf_url = generate_pdf(draft, state["brand_context"], pdf_path)
+        output_files = [docx_url, pdf_url]
+        
+    # Clean up the draft for display (remove slide tags if they exist)
+    display_draft = draft
+    if intent == "PRESENTATION":
+        display_draft = re.sub(r"IMAGE_PROMPT:.*", "", display_draft, flags=re.IGNORECASE).strip()
+        display_draft = re.sub(r"SLIDE_START|SLIDE_END", "", display_draft, flags=re.IGNORECASE).strip()
+        
+    return {
+        **state,
+        "output_files": output_files,
+        "final_document": display_draft
+    }
 
 def feedback_node(state: AgentState) -> AgentState:
     """The Brand Guardian provides FEEDBACK on the draft."""

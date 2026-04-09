@@ -1,15 +1,15 @@
 from langgraph.graph import StateGraph, END
 from src.state import AgentState
-from src.nodes import creates_node, updates_skill_node, feedback_node
+from src.nodes import creates_node, updates_skill_node, feedback_node, finalize_node
 
 def should_continue(state: AgentState) -> str:
     """Decision logic to continue or stop the iteration."""
     # If the brand guardian is happy or we hit max iterations, we stop
     if state["iteration_count"] >= state["max_iterations"]:
-        return "end"
+        return "finalize"
     
     if state["feedback_history"] and state["feedback_history"][-1].is_compliant:
-        return "end"
+        return "finalize"
     
     return "creates"
 
@@ -21,6 +21,7 @@ def create_brand_graph():
     workflow.add_node("creates", creates_node)
     workflow.add_node("updates_skill", updates_skill_node)
     workflow.add_node("feedback", feedback_node)
+    workflow.add_node("finalize", finalize_node)
 
     # Define the flow
     workflow.set_entry_point("creates")
@@ -37,9 +38,12 @@ def create_brand_graph():
         should_continue,
         {
             "creates": "creates",
-            "end": END
+            "finalize": "finalize"
         }
     )
+    
+    # 4. Finally, generate assets and exit
+    workflow.add_edge("finalize", END)
     
     return workflow.compile()
 

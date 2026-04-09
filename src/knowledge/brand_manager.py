@@ -78,6 +78,20 @@ class BrandManager:
         else:
             return self.collection.count()
 
+    def get_visuals(self) -> dict:
+        """Retrieves visual brand identity from Convex."""
+        if self.provider == "convex":
+            try:
+                return self.client.query("visuals:get") or {}
+            except:
+                return {}
+        return {}
+
+    def update_visuals(self, visuals: dict):
+        """Updates visual brand identity in Convex."""
+        if self.provider == "convex":
+            self.client.mutation("visuals:update", visuals)
+
 if __name__ == "__main__":
     # Quick test
     bm = BrandManager()

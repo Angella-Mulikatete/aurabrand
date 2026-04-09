@@ -1,4 +1,8 @@
 import os
+import sys
+
+# Ensure the project root is in the path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv
 from src.state import AgentState, BrandContext
 from src.graph import create_brand_graph
@@ -22,7 +26,7 @@ def main():
     )
     
     initial_state: AgentState = {
-        "user_request": "Write a short announcement for our new AI-driven document ecosystem.",
+        "user_request": "prepare a slide deck about AI agents in design",
         "brand_context": brand,
         "current_draft": "",
         "research_notes": [],
