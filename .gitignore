@@ -20,3 +20,5 @@ test_pollinations.py
 outputs/
 streamlit.log
 convex_dev.log
+
+node_modules/
