@@ -34,11 +34,12 @@ def creates_node(state: AgentState) -> AgentState:
     memory_guidelines = bm.get_guidelines(state["user_request"])
     memory_context = "\n".join([f"- {g}" for g in memory_guidelines])
     
-    # NEW: Fetch visual identity tokens
+    # NEW: Fetch visual identity tokens (Only as fallback if not provided by UI)
     visuals = bm.get_visuals()
-    state["brand_context"].primary_color = visuals.get("primary_color", state["brand_context"].primary_color)
-    state["brand_context"].secondary_color = visuals.get("secondary_color", state["brand_context"].secondary_color)
-    state["brand_context"].font_family = visuals.get("font_family", state["brand_context"].font_family)
+    if state["brand_context"].primary_color == "#7d33ff": # Default
+         state["brand_context"].primary_color = visuals.get("primary_color", state["brand_context"].primary_color)
+    if state["brand_context"].font_family == "Arial": # Default
+         state["brand_context"].font_family = visuals.get("font_family", state["brand_context"].font_family)
     
     # Gather context
     brand_identity = state["brand_context"].guidelines
@@ -104,15 +105,18 @@ def finalize_node(state: AgentState) -> AgentState:
     output_files = []
     if intent == "PRESENTATION":
         image_assets = {}
-        # Parse image prompts and generate assets
-        prompts = re.findall(r"IMAGE_PROMPT:\s*(.*)", draft, re.IGNORECASE)
-        for idx, prompt_text in enumerate(prompts):
-            p_text = prompt_text.strip()
-            if p_text:
-                img_path = f"outputs/assets/run_{state['iteration_count']}/slide_{idx+1}.png"
-                actual_path = generate_image(p_text, state["brand_context"], img_path)
-                if actual_path:
-                    image_assets[p_text] = actual_path
+        # Parse image prompts and generate assets (IF ENABLED)
+        if state["brand_context"].enable_images:
+            prompts = re.findall(r"IMAGE_PROMPT:\s*(.*)", draft, re.IGNORECASE)
+            for idx, prompt_text in enumerate(prompts):
+                p_text = prompt_text.strip()
+                if p_text:
+                    img_path = f"outputs/assets/run_{state['iteration_count']}/slide_{idx+1}.png"
+                    actual_path = generate_image(p_text, state["brand_context"], img_path)
+                    if actual_path:
+                        image_assets[p_text] = actual_path
+        else:
+            print("Visual synthesis disabled by user.")
                     
         pptx_url = generate_pptx(draft, state["brand_context"], pptx_path, image_assets)
         output_files = [pptx_url]

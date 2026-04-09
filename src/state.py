@@ -12,6 +12,7 @@ class BrandContext(BaseModel):
     secondary_color: str = "#ffffff"
     font_family: str = "Arial"
     logo_url: Union[str, None] = None
+    enable_images: bool = True
 
 class Feedback(BaseModel):
     is_compliant: bool

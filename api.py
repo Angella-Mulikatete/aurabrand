@@ -35,6 +35,10 @@ brand = BrandContext(
 class GenerateRequest(BaseModel):
     user_request: str
     intent: str = "PRESENTATION" # PRESENTATION or DOCUMENT
+    brand_name: Optional[str] = "AuraBrand"
+    primary_color: Optional[str] = "#7C3AED"
+    font_family: Optional[str] = "Arial"
+    enable_images: Optional[bool] = True
 
 class GenerateResponse(BaseModel):
     output_files: List[str]
@@ -45,13 +49,23 @@ async def generate_brand_assets(req: GenerateRequest):
     try:
         brand_graph = create_brand_graph()
         
+        # Build dynamic BrandContext based on user selection
+        user_brand = BrandContext(
+            name=req.brand_name or "AuraBrand",
+            tone="innovative, professional, forward-thinking",
+            guidelines="Avoid jargon. Use short sentences. Highlight human empowerment.",
+            forbidden_terms=["synergy", "paradigm", "leverage"],
+            primary_color=req.primary_color or "#7C3AED",
+            font_family=req.font_family or "Arial",
+            enable_images=req.enable_images if req.enable_images is not None else True
+        )
+        
         # Format the user request to include intent for the agent
-        # The agent relies on detecting this word in nodes.py detect_intent
         prompt_with_intent = f"I want to create a {req.intent.lower()}. {req.user_request}"
         
         initial_state: AgentState = {
             "user_request": prompt_with_intent,
-            "brand_context": brand,
+            "brand_context": user_brand,
             "current_draft": "",
             "research_notes": [],
             "feedback_history": [],
