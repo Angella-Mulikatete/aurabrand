@@ -4,12 +4,23 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
 import os
+import sys
+import traceback
 
-from src.graph import create_brand_graph
-from src.state import BrandContext, AgentState
-from src.knowledge.brand_manager import BrandManager, BrandGuideline
-from src.skills.benchmark_parse import parse_benchmark
-from src.skills.learn_agent import extract_brand_insights, extract_edit_insights
+# Add the project root to Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    from src.graph import create_brand_graph
+    from src.state import BrandContext, AgentState
+    from src.knowledge.brand_manager import BrandManager, BrandGuideline
+    from src.skills.benchmark_parse import parse_benchmark
+    from src.skills.learn_agent import extract_brand_insights, extract_edit_insights
+    IMPORTS_SUCCESS = True
+except Exception as e:
+    print(f"Warning: Could not import some modules: {e}")
+    print(f"Traceback: {traceback.format_exc()}")
+    IMPORTS_SUCCESS = False
 
 app = FastAPI(title="AuraBrand AI API")
 
@@ -34,7 +45,11 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "cors": "enabled"}
+    return {
+        "status": "healthy", 
+        "cors": "enabled",
+        "imports": "success" if IMPORTS_SUCCESS else "failed"
+    }
 
 # Using our hardcoded brand for now until full DB pass-through is implemented in Phase 4
 brand = BrandContext(
@@ -72,6 +87,9 @@ class LearnEditRequest(BaseModel):
 
 @app.post("/generate", response_model=GenerateResponse)
 async def generate_brand_assets(req: GenerateRequest):
+    if not IMPORTS_SUCCESS:
+        raise HTTPException(status_code=503, detail="Service dependencies not available")
+    
     try:
         brand_graph = create_brand_graph()
         
