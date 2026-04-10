@@ -10,8 +10,8 @@ import {
   Palette, Type, Image as ImageIcon, Upload, GraduationCap, XCircle, CheckCircle2 
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
+const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = NEXT_PUBLIC_API_URL.replace(/\/$/, "");
 type OutputFile = {
   url: string;
   type: string;

@@ -17,10 +17,14 @@ app = FastAPI(title="AuraBrand AI API")
 os.makedirs("outputs", exist_ok=True)
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
-# Configure CORS so the Next.js frontend can make requests (Allowing all local dev ports)
+# Configure CORS so the Next.js frontend can make requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://aurabrandtool.vercel.app",
+        "https://aurabrand.onrender.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
