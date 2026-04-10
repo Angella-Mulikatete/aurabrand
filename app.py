@@ -26,6 +26,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "AuraBrand API is running"}
+
 # Using our hardcoded brand for now until full DB pass-through is implemented in Phase 4
 brand = BrandContext(
     name="AuraBrand",
