@@ -9,7 +9,7 @@ from src.graph import create_brand_graph
 from src.state import BrandContext, AgentState
 from src.knowledge.brand_manager import BrandManager, BrandGuideline
 from src.skills.benchmark_parse import parse_benchmark
-from src.skills.learn_agent import extract_brand_insights
+from src.skills.learn_agent import extract_brand_insights, extract_edit_insights
 
 app = FastAPI(title="AuraBrand AI API")
 
@@ -17,15 +17,11 @@ app = FastAPI(title="AuraBrand AI API")
 os.makedirs("outputs", exist_ok=True)
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
-# Configure CORS so the Next.js frontend can make requests
+# Configure CORS for maximum compatibility since we don't need cookies
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://aurabrandtool.vercel.app",
-        "https://aurabrand.onrender.com"
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -63,6 +59,10 @@ class RefineRequest(BaseModel):
     primary_color: Optional[str] = "#7C3AED"
     font_family: Optional[str] = "Arial"
     enable_images: Optional[bool] = True
+
+class LearnEditRequest(BaseModel):
+    original_document: str
+    final_document: str
 
 @app.post("/generate", response_model=GenerateResponse)
 async def generate_brand_assets(req: GenerateRequest):
@@ -195,6 +195,30 @@ async def reset_benchmarks():
     bm = BrandManager()
     bm.clear_brand_data()
     return {"status": "success", "message": "Brand knowledge reset."}
+
+@app.post("/learn_from_edit")
+async def learn_from_edit_api(req: LearnEditRequest):
+    """Learns brand guidelines passively from direct user edits."""
+    try:
+        bm = BrandManager()
+        print("--- [API: Learn from Edit] Comparing original vs edited document... ---")
+        
+        insights = extract_edit_insights(req.original_document, req.final_document)
+        
+        saved_count = 0
+        for insight in insights:
+            bm.add_guideline(insight)
+            saved_count += 1
+            
+        print(f"Extracted and saved {len(insights)} implicit brand rules.")
+        return {
+            "status": "success", 
+            "learned_rules": saved_count, 
+            "insights": [i.content for i in insights]
+        }
+    except Exception as e:
+        print(f"Error in learn_from_edit API: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

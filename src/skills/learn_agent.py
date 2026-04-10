@@ -53,3 +53,50 @@ def extract_brand_insights(text: str) -> List[BrandGuideline]:
         print(f"Error extracting insights: {e}")
         
     return guidelines
+
+def extract_edit_insights(original: str, final: str) -> List[BrandGuideline]:
+    """Analyzes the differences between an AI draft and a user's manual edit to extract brand guidelines."""
+    print("--- [Skill: Learn Agent] Analyzing Manual Edits ---")
+    
+    model = get_model_with_fallback()
+    
+    prompt = f"""
+    You are the 'AuraBrand Analyst'. Compare an AI-generated draft to the user's final manually edited version.
+    Identify WHAT the user changed, and extract 1 to 3 concise, actionable brand guidelines based on those edits.
+    
+    ORIGINAL AI DRAFT:
+    {original}
+    
+    FINAL USER EDITED DRAFT:
+    {final}
+    
+    Focus on changes in:
+    1. Tone of Voice
+    2. Specific Terminology or Vocabulary (e.g. avoided words vs preferred words)
+    3. Formatting or Structure
+    
+    Return a JSON array of objects with:
+    - 'category': one of ['tone', 'structure', 'vocabulary']
+    - 'content': The guideline text.
+    
+    If there are no meaningful stylistic changes, return an empty array [].
+    Output ONLY valid JSON.
+    """
+    
+    response = model.invoke([HumanMessage(content=prompt)])
+    
+    guidelines = []
+    try:
+        clean_json = response.content.replace("```json", "").replace("```", "").strip()
+        data = json.loads(clean_json)
+        for item in data:
+            g_id = f"learned_edit_{uuid.uuid4().hex[:8]}"
+            guidelines.append(BrandGuideline(
+                id=g_id,
+                content=item['content'],
+                category=item['category']
+            ))
+    except Exception as e:
+        print(f"Error extracting edit insights: {e}")
+        
+    return guidelines

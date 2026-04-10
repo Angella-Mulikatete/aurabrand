@@ -39,6 +39,7 @@ export default function Home() {
   const [isLearning, setIsLearning] = useState(false);
   const [activeTab, setActiveTab] = useState<"PRESENTATION" | "DOCUMENT">("PRESENTATION");
   const [results, setResults] = useState<OutputFile[]>([]);
+  const [originalDocument, setOriginalDocument] = useState<string | null>(null);
   const [finalDocument, setFinalDocument] = useState<string | null>(null);
   const [refinePrompt, setRefinePrompt] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +104,7 @@ export default function Home() {
       });
 
       setResults(outputs);
+      setOriginalDocument(data.final_document || null);
       setFinalDocument(data.final_document || null);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Could not connect to the API server.";
@@ -161,6 +163,7 @@ export default function Home() {
       });
 
       setResults(outputs);
+      setOriginalDocument(data.final_document || null);
       setFinalDocument(data.final_document || null);
       setRefinePrompt("");
     } catch (err: unknown) {
@@ -206,6 +209,38 @@ export default function Home() {
     } finally {
       setIsLearning(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleLearnFromEdit = async () => {
+    if (!originalDocument || !finalDocument || originalDocument === finalDocument) return;
+    
+    setIsLearning(true);
+    setUploadStatus({msg: 'Analyzing manual edits...', type: 'idle'});
+    
+    try {
+      const response = await fetch(`${API_URL}/learn_from_edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          original_document: originalDocument,
+          final_document: finalDocument
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to learn from edits");
+      
+      const data = await response.json();
+      setUploadStatus({
+        msg: `Learned ${data.learned_rules} brand rules from your edits.`, 
+        type: 'success'
+      });
+      // Set original document to final document so they match again
+      setOriginalDocument(finalDocument);
+    } catch (err: unknown) {
+      setUploadStatus({msg: "Failed to save lessons from edits.", type: 'error'});
+    } finally {
+      setIsLearning(false);
     }
   };
 
@@ -398,10 +433,29 @@ export default function Home() {
                   </div>
                 ) : finalDocument || results.length > 0 ? (
                   <div className="w-full h-full flex flex-col space-y-4 max-h-[600px]">
-                    <div className="flex-grow p-4 rounded-xl bg-white/50 border border-white overflow-y-auto font-sans text-sm text-foreground/80 whitespace-pre-wrap shadow-inner relative">
-                        <div className="absolute top-2 right-2 text-[10px] font-mono opacity-50 uppercase tracking-widest">{activeTab} DRAFT</div>
-                        {finalDocument || "Document generated successfully."}
+                    <div className="flex-grow flex flex-col relative w-full h-full min-h-[200px]">
+                       <textarea 
+                         className="flex-grow p-4 rounded-xl bg-white/50 border border-white font-sans text-sm text-foreground/80 shadow-inner w-full focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none h-full min-h-[200px]"
+                         value={finalDocument || "Document generated successfully."}
+                         onChange={(e) => setFinalDocument(e.target.value)}
+                         disabled={!finalDocument}
+                       />
+                       <div className="absolute top-2 right-4 text-[10px] font-mono opacity-50 uppercase tracking-widest">{activeTab} DRAFT</div>
                     </div>
+                    {finalDocument && finalDocument !== originalDocument && (
+                       <Button 
+                         onClick={handleLearnFromEdit} 
+                         disabled={isLearning} 
+                         type="button" 
+                         className="w-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 font-sans cursor-pointer py-6 group"
+                       >
+                         {isLearning ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Extracting Brand Rules...</>
+                         ) : (
+                            <><CheckCircle2 className="mr-2 w-4 h-4 group-hover:scale-110 transition-transform" /> Approve & Learn From Edits</>
+                         )}
+                       </Button>
+                    )}
                     
                     <form onSubmit={handleRefine} className="flex gap-2">
                         <Input 
