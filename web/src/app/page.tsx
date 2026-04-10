@@ -39,6 +39,8 @@ export default function Home() {
   const [isLearning, setIsLearning] = useState(false);
   const [activeTab, setActiveTab] = useState<"PRESENTATION" | "DOCUMENT">("PRESENTATION");
   const [results, setResults] = useState<OutputFile[]>([]);
+  const [finalDocument, setFinalDocument] = useState<string | null>(null);
+  const [refinePrompt, setRefinePrompt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [progressMsg, setProgressMsg] = useState("Initializing agent...");
   const [uploadStatus, setUploadStatus] = useState<{msg: string, type: 'success' | 'error' | 'idle'}>({msg: '', type: 'idle'});
@@ -101,6 +103,66 @@ export default function Home() {
       });
 
       setResults(outputs);
+      setFinalDocument(data.final_document || null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Could not connect to the API server.";
+      setError(message);
+    } finally {
+      clearInterval(interval);
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRefine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!refinePrompt || !finalDocument) return;
+
+    setIsGenerating(true);
+    setError(null);
+    setResults([]);
+    
+    let msgIdx = 0;
+    setProgressMsg("Refining document with feedback...");
+    const interval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % progressMessages.length;
+      setProgressMsg(progressMessages[msgIdx]);
+    }, 4500);
+
+    try {
+      const response = await fetch(`${API_URL}/refine`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feedback: refinePrompt,
+          previous_document: finalDocument,
+          intent: activeTab,
+          brand_name: brandName,
+          primary_color: primaryColor,
+          font_family: fontFamily,
+          enable_images: enableVisuals
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || "Refinement failed.");
+      }
+
+      const data = await response.json();
+
+      const outputs: OutputFile[] = (data.output_files || []).map((fp: string) => {
+        const filename = fp.split("/").pop() || fp;
+        const ext = filename.split(".").pop()?.toUpperCase() || "FILE";
+        return {
+          url: `${API_URL}/outputs/${filename}`,
+          type: ext,
+          title: filename,
+        };
+      });
+
+      setResults(outputs);
+      setFinalDocument(data.final_document || null);
+      setRefinePrompt("");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Could not connect to the API server.";
       setError(message);
@@ -334,26 +396,43 @@ export default function Home() {
                     <p className="font-mono text-red-600 font-semibold">API Error</p>
                     <p className="text-sm text-foreground/60 font-sans">{error}</p>
                   </div>
-                ) : results.length > 0 ? (
-                  <div className="w-full space-y-4">
-                    {results.map((r, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white/60 border border-white hover:bg-white/80 transition-all shadow-sm">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <FileText className="w-6 h-6 text-primary" />
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-foreground font-sans">{r.title}</h4>
-                            <p className="text-xs text-foreground/50 uppercase tracking-widest mt-1">Learned {r.type} Asset</p>
-                          </div>
-                        </div>
-                        <a href={r.url} download>
-                          <Button variant="outline" className="gap-2 bg-white/50 border-primary/20 hover:border-primary/50 text-primary-dark cursor-pointer shadow-sm">
-                            <Download className="w-3 h-3" /> Download
-                          </Button>
+                ) : finalDocument || results.length > 0 ? (
+                  <div className="w-full h-full flex flex-col space-y-4 max-h-[600px]">
+                    <div className="flex-grow p-4 rounded-xl bg-white/50 border border-white overflow-y-auto font-sans text-sm text-foreground/80 whitespace-pre-wrap shadow-inner relative">
+                        <div className="absolute top-2 right-2 text-[10px] font-mono opacity-50 uppercase tracking-widest">{activeTab} DRAFT</div>
+                        {finalDocument || "Document generated successfully."}
+                    </div>
+                    
+                    <form onSubmit={handleRefine} className="flex gap-2">
+                        <Input 
+                            className="bg-white/50 border-white/40 focus-visible:ring-primary/40 flex-grow" 
+                            placeholder="Improve this draft (e.g. 'Make it more persuasive')"
+                            value={refinePrompt}
+                            onChange={(e) => setRefinePrompt(e.target.value)}
+                        />
+                        <Button type="submit" disabled={!refinePrompt || isGenerating} className="bg-accent hover:bg-accent/80 text-white cursor-pointer px-6">
+                            Refine
+                        </Button>
+                    </form>
+
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      {results.map((r, i) => (
+                        <a key={i} href={r.url} download className="block">
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-white/60 border border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all shadow-sm cursor-pointer group">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <FileText className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                <h4 className="font-bold text-foreground font-sans text-sm truncate max-w-[150px]">{r.title}</h4>
+                                <p className="text-[10px] text-foreground/50 uppercase tracking-widest mt-0.5">Download {r.type}</p>
+                                </div>
+                            </div>
+                            <Download className="w-4 h-4 text-primary opacity-50 group-hover:opacity-100 transition-opacity" />
+                            </div>
                         </a>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center opacity-40">

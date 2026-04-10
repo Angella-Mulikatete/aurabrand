@@ -7,7 +7,7 @@ export const vectorSearch = action({
     embedding: v.array(v.number()),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<any> => {
     const results = await ctx.vectorSearch("brand_guidelines", "by_embedding", {
       vector: args.embedding,
       limit: args.limit ?? 3,

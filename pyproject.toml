@@ -18,6 +18,13 @@ dependencies = [
     "streamlit",
     "plotly",
     "convex",
+    "fastapi",
+    "uvicorn",
+    "python-multipart",
+    "python-docx",
+    "python-pptx",
+    "pypdf",
+    "reportlab",
 ]
 
 [tool.setuptools]

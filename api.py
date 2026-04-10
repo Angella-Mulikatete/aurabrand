@@ -47,6 +47,15 @@ class GenerateResponse(BaseModel):
     output_files: List[str]
     final_document: Optional[str]
 
+class RefineRequest(BaseModel):
+    feedback: str
+    previous_document: str
+    intent: str = "PRESENTATION" # PRESENTATION or DOCUMENT
+    brand_name: Optional[str] = "AuraBrand"
+    primary_color: Optional[str] = "#7C3AED"
+    font_family: Optional[str] = "Arial"
+    enable_images: Optional[bool] = True
+
 @app.post("/generate", response_model=GenerateResponse)
 async def generate_brand_assets(req: GenerateRequest):
     try:
@@ -88,6 +97,47 @@ async def generate_brand_assets(req: GenerateRequest):
         
     except Exception as e:
         print(f"Error during generation: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/refine", response_model=GenerateResponse)
+async def refine_brand_assets(req: RefineRequest):
+    try:
+        brand_graph = create_brand_graph()
+        
+        user_brand = BrandContext(
+            name=req.brand_name or "AuraBrand",
+            tone="innovative, professional, forward-thinking",
+            guidelines="Avoid jargon. Use short sentences. Highlight human empowerment.",
+            forbidden_terms=["synergy", "paradigm", "leverage"],
+            primary_color=req.primary_color or "#7C3AED",
+            font_family=req.font_family or "Arial",
+            enable_images=req.enable_images if req.enable_images is not None else True
+        )
+        
+        prompt_with_intent = f"Please improve the existing {req.intent.lower()} based on this feedback: {req.feedback}"
+        
+        initial_state: AgentState = {
+            "user_request": prompt_with_intent,
+            "brand_context": user_brand,
+            "current_draft": req.previous_document,
+            "research_notes": [],
+            "feedback_history": [],
+            "iteration_count": 0,
+            "max_iterations": 3,
+            "final_document": None,
+            "output_files": []
+        }
+        
+        print(f"Triggering AuraBrand LangGraph refinement for: '{req.feedback}'")
+        final_state = brand_graph.invoke(initial_state)
+        
+        return GenerateResponse(
+            output_files=final_state["output_files"],
+            final_document=final_state["final_document"]
+        )
+        
+    except Exception as e:
+        print(f"Error during refinement: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/benchmarks/upload")
