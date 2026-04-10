@@ -9,7 +9,7 @@ export default defineSchema({
     id: v.string(), 
   }).vectorIndex("by_embedding", {
     vectorField: "embedding",
-    dimensions: 384,
+    dimensions: 768,
   }),
 
   // Visual Identity Storage
