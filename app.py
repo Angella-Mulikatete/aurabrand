@@ -24,11 +24,17 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 @app.get("/")
 async def root():
     return {"status": "ok", "message": "AuraBrand API is running"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "cors": "enabled"}
 
 # Using our hardcoded brand for now until full DB pass-through is implemented in Phase 4
 brand = BrandContext(
