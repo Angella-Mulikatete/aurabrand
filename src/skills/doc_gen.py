@@ -36,6 +36,6 @@ def generate_docx(content: str, brand: BrandContext, output_path: str = "output.
     # 4. Save
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     doc.save(output_path)
-    print(f"✅ Document generated at: {output_path}")
+    print(f"Document generated at: {output_path}")
     
     return os.path.abspath(output_path)

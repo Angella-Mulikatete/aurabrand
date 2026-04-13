@@ -1,0 +1,7 @@
+{
+  "name": "Company Profile: AuraBrand",
+  "request": "Write a short company mission statement and a small FAQ about how our AI keeps brands safe. Keep it professional and short.",
+  "target_tone": "trustworthy, authoritative, human-centric",
+  "forbidden_terms": ["interact", "utilize"],
+  "gold_standard": "At AuraBrand, our mission is to safeguard corporate identity through intelligent innovation. We empower teams to create at scale while ensuring that every piece of content remains strictly aligned with their unique strategic vision. We believe in high-fidelity, human-centric communication that never sacrifices brand integrity.\n\n### FAQ\n\n**How does the AI ensure brand safety?**\nOur system utilizes a 'Brand Guardian' evaluation loop that scores content against your specific guidelines before any final document is generated. It identifies tone mismatches and filters for forbidden terminology.\n\n**Can the system scale to different regions?**\nYes. By defining region-specific brand context, AuraBrand maintains a consistent core identity while allowing for culturally appropriate stylistic variants."
+}

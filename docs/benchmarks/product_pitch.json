@@ -1,0 +1,7 @@
+{
+  "name": "Product Pitch: AuraBlender",
+  "request": "Write a 3-paragraph product pitch for an AI-powered kitchen blender called AuraBlender. It uses computer vision to detect ingredients and self-adjust speeds.",
+  "target_tone": "innovative, professional, forward-thinking",
+  "forbidden_terms": ["synergy", "paradigm", "leverage"],
+  "gold_standard": "AuraBlender represents the next evolution in kitchen intelligence. By integrating precision computer vision directly into the blending cycle, it eliminates guesswork. The system automatically identifies the texture of your ingredients—from leafy greens to frozen fruits—and modulates RPMs in real-time to ensure a perfect consistency every time.\n\nWe believe that technology should empower, not complicate. AuraBlender is designed for the modern home chef who values both efficiency and professional-grade results. Its intuitive interface provides just the right amount of control while allowing its core AI to handle the complex physics of fluid dynamics, giving you more time to focus on your culinary creativity.\n\nBuilt on the foundation of our forward-thinking design philosophy, the AuraBlender is more than just an appliance; it is a collaborative partner in your nutritional journey. With each pulse, it learns your preferences, bringing a new level of innovation to your daily routine. This is the future of the home kitchen—intelligent, elegant, and uncompromising."
+}

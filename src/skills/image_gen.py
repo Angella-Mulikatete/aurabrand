@@ -33,19 +33,19 @@ def generate_image(prompt: str, brand: BrandContext, output_path: str) -> str:
                 with open(output_path, 'wb') as handler:
                     handler.write(response.content)
                     
-                print(f"✅ Image saved to: {output_path}")
+                print(f"Image saved to: {output_path}")
                 return os.path.abspath(output_path)
             elif response.status_code == 429:
-                print(f"⚠️ Rate limited. Retrying in 3 seconds... (Attempt {attempt+1}/{max_retries})")
+                print(f"Rate limited. Retrying in 3 seconds... (Attempt {attempt+1}/{max_retries})")
                 time.sleep(3)
             else:
-                print(f"❌ Image generation failed with status: {response.status_code}")
+                print(f"Image generation failed with status: {response.status_code}")
                 return ""
         
-        print("❌ Failed after max retries")
+        print("Failed after max retries")
         return ""
             
     except Exception as e:
-        print(f"❌ Image generation failed: {e}")
+        print(f"Image generation failed: {e}")
         # Return empty string to allow the system to fallback to text placeholder
         return ""

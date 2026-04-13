@@ -104,5 +104,5 @@ def generate_pdf(content: str, brand: BrandContext, output_path: str = "output.p
 
     doc.build(flowables, onFirstPage=add_footer, onLaterPages=add_footer)
     
-    print(f"✅ PDF generated at: {output_path}")
+    print(f"PDF generated at: {output_path}")
     return os.path.abspath(output_path)

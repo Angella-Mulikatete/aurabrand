@@ -17,32 +17,39 @@ class BrandManager:
         if self.provider == "convex":
             self.convex_url = os.getenv("CONVEX_URL")
             self.client = ConvexClient(self.convex_url)
-            self.embedder = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+            self.embedder = GoogleGenerativeAIEmbeddings(model="embedding-001")
         else:
             raise NotImplementedError("Local ChromaDB has been removed to reduce bundle size. Please use Convex DB.")
 
     def add_guideline(self, guideline: BrandGuideline):
         """Adds a specific brand guideline to the vector store."""
         if self.provider == "convex":
-            embedding = self.embedder.embed_query(guideline.content)
-            self.client.mutation("guidelines:add", {
-                "id": guideline.id,
-                "content": guideline.content,
-                "category": guideline.category,
-                "embedding": embedding
-            })
+            try:
+                embedding = self.embedder.embed_query(guideline.content)
+                self.client.mutation("guidelines:add", {
+                    "id": guideline.id,
+                    "content": guideline.content,
+                    "category": guideline.category,
+                    "embedding": embedding
+                })
+            except Exception as e:
+                print(f"BrandManager Storage Failed: {e}")
         else:
             pass
 
     def get_guidelines(self, query: str, n_results: int = 3) -> List[str]:
         """Retrieves relevant guidelines for a given query (e.g., a draft snippet)."""
         if self.provider == "convex":
-            embedding = self.embedder.embed_query(query)
-            results = self.client.action("actions:vectorSearch", {
-                "embedding": embedding,
-                "limit": n_results
-            })
-            return [r["content"] for r in results]
+            try:
+                embedding = self.embedder.embed_query(query)
+                results = self.client.action("actions:vectorSearch", {
+                    "embedding": embedding,
+                    "limit": n_results
+                })
+                return [r["content"] for r in results]
+            except Exception as e:
+                print(f"BrandManager Retrieval Failed: {e}")
+                return []
         else:
             return []
 
@@ -59,6 +66,17 @@ class BrandManager:
             return self.client.query("guidelines:count")
         else:
             return 0
+
+    def get_knowledge_stats(self) -> dict:
+        """Returns detailed statistics about learned knowledge."""
+        if self.provider == "convex":
+            counts = self.client.query("guidelines:getCategoryCounts") or {}
+            total = sum(counts.values())
+            return {
+                "total": total,
+                "categories": counts
+            }
+        return {"total": 0, "categories": {}}
 
     def get_visuals(self) -> dict:
         """Retrieves visual brand identity from Convex."""
