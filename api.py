@@ -28,13 +28,19 @@ app = FastAPI(title="AuraBrand AI API")
 os.makedirs("outputs", exist_ok=True)
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
-# Configure CORS for maximum compatibility since we don't need cookies
+# Configure CORS
+origins = [
+    "http://localhost:3000",
+    "https://aurabrandtool.vercel.app",
+    "https://aurabrandtool.vercel.app/",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=origins + ["*"], # Keep * as fallback but lead with explicit for strict browsers
+    allow_credentials=True, # Set to True to handle potential credentialed requests from Vercel
+    allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
     expose_headers=["*"],
     max_age=3600,
 )
