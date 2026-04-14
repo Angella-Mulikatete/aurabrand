@@ -103,6 +103,39 @@ Alternatively, you can run the legacy **Streamlit Dashboard** for quick testing:
 streamlit run src/dashboard.py
 ```
 
+## ⌨️ Terminal Usage (CLI)
+
+You can trigger AuraBrand missions directly from your terminal without using a browser. This is ideal for batch processing or automation.
+
+```bash
+# Generate a Presentation (Default)
+python main.py --intent PRESENTATION --prompt "Future of AI in creative design" --brand "AuraBrand"
+
+# Generate a Document
+python main.py --intent DOCUMENT --prompt "Project specification for a new EV charging network" --brand "VoltNet" --color "#10B981"
+```
+
+### CLI Arguments:
+- `--prompt`: (Required) The mission description.
+- `--intent`: `PRESENTATION` or `DOCUMENT` (Default: `PRESENTATION`).
+- `--brand`: Your brand name (Default: `AuraBrand`).
+- `--tone`: Brand tone of voice (Default: `Innovative and professional`).
+- `--color`: Primary hex color (Default: `#7C3AED`).
+- `--font`: Typography choice (Default: `Fira Sans`).
+- `--iters`: Refinement iterations (Default: `3`).
+- `--verbose`: Enable detailed node processing logs.
+
+## 🔌 Editor Integration (MCP)
+
+AuraBrand supports the **Model Context Protocol (MCP)**, allowing you to use it as a tool directly inside AI editors like **Cursor**, **Windsurf**, or **VS Code**.
+
+### Setup for Cursor/Windsurf:
+1. Open your editor's **MCP Settings**.
+2. Add a new **Command** server:
+   - **Name**: `AuraBrand`
+   - **Command**: `python [abs_path_to_repo]/src/mcp_server.py`
+3. You can now use `@AuraBrand` in your AI chat to generate documents or read brand guidelines.
+
 ## 📂 Project Structure
 
 - `src/`: Core agentic logic, LangGraph definitions, and skills.

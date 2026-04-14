@@ -17,7 +17,8 @@ class BrandManager:
         if self.provider == "convex":
             self.convex_url = os.getenv("CONVEX_URL")
             self.client = ConvexClient(self.convex_url)
-            self.embedder = GoogleGenerativeAIEmbeddings(model="embedding-001")
+            # Using the fully qualified model name for better toolchain compatibility
+            self.embedder = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         else:
             raise NotImplementedError("Local ChromaDB has been removed to reduce bundle size. Please use Convex DB.")
 
